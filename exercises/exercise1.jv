@@ -84,7 +84,7 @@ pipeline AirportsPipeline {
             "Latitude" oftype decimal,
             "Longitude" oftype decimal,
             "Altitude" oftype decimal,
-            "Zeitzone" oftype decimal,
+            "Zeitzone" oftype text,
             "DST" oftype text,
             "Zeitzonen-Datenbank" oftype text,
             "geo_punkt" oftype text
