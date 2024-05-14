@@ -1,0 +1,115 @@
+
+// 1. This Jayvee model describes a pipeline 
+// from a CSV file in the web 
+// to a SQLite file sink.
+pipeline treesPipeline {
+
+    // 2. We describe the structure of the pipeline,
+    // usually at the top of the pipeline.
+    // by connecting blocks via pipes. 
+
+    // 3. Syntax of a pipe
+    // connecting the block  treesExtractor
+    // with the block  treesTextFileInterpreter.
+    treesExtractor -> treesTextFileInterpreter;
+
+    // 4. The output of the preceding block is hereby used 
+    // as input for the succeeding block.
+
+    // 5. Pipes can be further chained, 
+    // leading to an overview of the pipeline.
+     treesTextFileInterpreter
+        -> treesCSVInterpreter 
+        //-> NameHeaderWriter
+        -> DBAColumnDeleter
+        -> treesTableInterpreter
+        -> treesLoader;
+
+
+    // 6. Below the pipes, we usually define the blocks 
+    // that are connected by the pipes.
+
+    // 7. Blocks instantiate a blocktype by using the oftype keyword.
+    // The blocktype defines the available properties that the block
+    // can use to specify the intended behavior of the block 
+    block treesExtractor oftype HttpExtractor {
+
+        // 8. Properties are assigned to concrete values.
+        // Here, we specify the URL where the file shall be downloaded from.
+        url: "https://opendata.rhein-kreis-neuss.de/api/v2/catalog/datasets/stadt-neuss-herbstpflanzung-2023/exports/csv";
+    }
+
+    // 9. The HttpExtractor requires no input and produces a binary file as output.
+    // This file has to be interpreted, e.g., as text file.
+    block treesTextFileInterpreter oftype TextFileInterpreter { }
+
+    // 10. Next, we interpret the text file as sheet.
+    // A sheet only contains text cells and is useful for manipulating the shape of data before assigning more strict value types to cells.
+    block treesCSVInterpreter oftype CSVInterpreter {
+        //enclosing: '"';
+        delimiter: ";";
+    }
+
+    block DBAColumnDeleter oftype ColumnDeleter {
+        delete: [column E];
+    }
+
+    // 11. We can write into cells of a sheet using the CellWriter blocktype.
+    //block NameHeaderWriter oftype CellWriter {
+        // 12. We utilize a syntax similar to spreadsheet programs.
+        // Cell ranges can be described using the keywords "cell", "row", "column", or "range" that indicate which 
+        // cells are selected for the write action.
+    //    at: cell A1;
+
+        // 13. For each cell we selected with the "at" property above,
+        // we can specify what value shall be written into the cell.
+    //    write: ["name"];
+    //}
+
+    // 14. As a next step, we interpret the sheet as a table by adding structure.
+    // We define a valuetype per column that specifies the data type of the column.
+    // Rows that include values that are not valid according to the their valuetypes are dropped automatically.
+    valuetype geopoint oftype text {
+    constraints: [ geopointc ];
+    }
+
+    constraint geopointc oftype RegexConstraint {
+        regex: /^-?\d{1,3}\.\d+, -?\d{1,3}\.\d+$/;
+    }
+
+    valuetype stadtteil oftype text {
+    constraints: [ stadtteilC ];
+    }
+
+    constraint stadtteilC oftype RegexConstraint {
+        regex: /^Furth-.*$/;
+    }
+    //{geo-coordinate 1}, {geo-coordinate 2}
+    //a geo-coordinate is defined as {1-3 numbers}.{numbers}
+
+
+    block treesTableInterpreter oftype TableInterpreter {
+        header: true;
+        columns: [
+            "lfd_nr" oftype integer,
+            "stadtteil" oftype stadtteil,
+            "standort" oftype text,
+            "baumart_botanisch" oftype text,
+            "baumart_deutsch" oftype text,
+            "id" oftype geopoint
+        ];
+    }
+
+    // 15. As a last step, we load the table into a sink,
+    // here into a sqlite file.
+    // The structural information of the table is used
+    // to generate the correct table.
+    block treesLoader oftype SQLiteLoader {
+        table: "trees";
+        file: "./trees.sqlite";
+    }
+
+    // 16. Congratulations!
+    // You can now use the sink for your data analysis, app, 
+    // or whatever you want to do with the cleaned data.  
+}
