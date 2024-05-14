@@ -21,7 +21,7 @@ pipeline treesPipeline {
      treesTextFileInterpreter
         -> treesCSVInterpreter 
         //-> NameHeaderWriter
-        -> DBAColumnDeleter
+        //-> DBAColumnDeleter
         -> treesTableInterpreter
         -> treesLoader;
 
