@@ -21,7 +21,7 @@ pipeline treesPipeline {
      treesTextFileInterpreter
         -> treesCSVInterpreter 
         //-> NameHeaderWriter
-        //-> DBAColumnDeleter
+        -> DBAColumnDeleter
         -> treesTableInterpreter
         -> treesLoader;
 
@@ -95,7 +95,7 @@ pipeline treesPipeline {
             "stadtteil" oftype stadtteil,
             "standort" oftype text,
             "baumart_botanisch" oftype text,
-            "baumart_deutsch" oftype text,
+            //"baumart_deutsch" oftype text,
             "id" oftype geopoint
         ];
     }
